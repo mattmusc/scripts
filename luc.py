@@ -1,55 +1,49 @@
 #!/usr/bin/env python3
 
-from PIL import Image
-from PIL.ExifTags import TAGS
-
+import exiftool
 import glob
 import operator
 
-class ExifNotFoundError(Exception):
-    """Raised when no Exif data has been found
 
-    Attributes:
-        filename The filename being analyzed
-        message Overridable exception message
-    """
-    def __init__(self, filename, message='No Exif found for'):
-        self.message = '{} {}'.format(message, filename)
+def get_exif(fname):
+    with exiftool.ExifTool() as et:
+        metadata = et.get_metadata(fname)
+        return metadata['EXIF:FocalLength']
+    return 0
 
 
-def get_exif(fn):
-    exif = {}
-    i = Image.open(fn)
-    info = i._getexif()
+def build_histogram(focal_lengths):
+    fls = {}
+    for focal_length in focal_lengths:
+        if focal_length in fls:
+            fls[focal_length] += 1
+        else:
+            fls[focal_length] = 1
+    return fls
 
-    if info is None:
-        raise ExifNotFoundError(fn)
 
-    for tag, value in info.items():
-        decoded = TAGS.get(tag, tag)
-        exif[decoded] = value
+def get_key(key):
+    return key
 
-    return exif
 
-def get_focal_length(exif):
-    return exif['FocalLength'][0]
+def entry2string(e):
+    return '{:>6} : {:<4}'.format(e[0], e[1])
 
 if __name__ == '__main__':
+
     fls = {}
+    path = '/Users/mattmusc/Desktop/2017-Milano/*.dng'
     count = 0
-    for fname in glob.iglob('/Users/mattmusc/Desktop/**/*.dng', recursive=True):
+
+    for f in glob.iglob(path, recursive=True):
         count += 1
-        try:
-            fl = get_focal_length(get_exif(fname))
-            if fl in fls:
-                fls[fl] = fls[fl] + 1
-            else:
-                fls[fl] = 1
-        except ExifNotFoundError as err:
-            print(err.message)
+        focal_length = get_exif(f)
+
+        if focal_length in fls:
+            fls[focal_length] += 1
+        else:
+            fls[focal_length] = 1
 
     print('Total files analyzed: {}'.format(count))
     print('Focal Lengths:')
-    print(sorted(fls.items(), key=operator.itemgetter(1), reverse=True))
-
-
+    print("\n".join( map( entry2string, fls.items() ) ))
