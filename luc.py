@@ -3,6 +3,7 @@
 import exiftool
 import glob
 import operator
+import timeit
 
 
 def get_exif(fname):
@@ -22,20 +23,20 @@ def build_histogram(focal_lengths):
     return fls
 
 
-def get_key(key):
-    return key
+def get_key(e):
+    return e[1]
 
 
 def entry2string(e):
     return '{:>6} : {:<4}'.format(e[0], e[1])
 
-if __name__ == '__main__':
 
+def main(path):
     fls = {}
-    path = '/Users/mattmusc/Desktop/2017-Milano/*.dng'
     count = 0
 
     for f in glob.iglob(path, recursive=True):
+        print(f)
         count += 1
         focal_length = get_exif(f)
 
@@ -46,4 +47,13 @@ if __name__ == '__main__':
 
     print('Total files analyzed: {}'.format(count))
     print('Focal Lengths:')
-    print("\n".join( map( entry2string, fls.items() ) ))
+    print("\n".join( map( entry2string, sorted(fls.items(), key=get_key, reverse=True)) ))
+
+
+if __name__ == '__main__':
+
+    #path = '/Users/mattmusc/Desktop/2017-Milano/*.dng'
+    path = '/Volumes/Pictures/archivio/**/*.dng'
+
+    timeit.Timer(main(path))
+
